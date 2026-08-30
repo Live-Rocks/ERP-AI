@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { POST as advice } from "../src/app/api/ai/advice/route";
+import { GET as audit } from "../src/app/api/admin/audit/route";
+import { resetActivityForTests } from "../src/server/activity-log";
+import { getFactoryProvider, resetFactoryStoreForTests } from "../src/server/factory-store";
+import { MemoryAuthRepository, setAuthRepositoryForTests } from "../src/server/repositories";
+import { createSessionToken } from "../src/server/session";
+
+test("本機 AI 建議引用 SOP、告警與工單，且寫入 audit", async () => {
+  resetActivityForTests(); resetFactoryStoreForTests(); setAuthRepositoryForTests(new MemoryAuthRepository());
+  getFactoryProvider().refresh(new Date(0));
+  const adminToken = createSessionToken("00000000-0000-4000-8000-000000000001", "admin");
+  const response = await advice(new Request("http://localhost/api/ai/advice", { method: "POST", headers: { cookie: `erp_session=${adminToken}`, "content-type": "application/json" }, body: JSON.stringify({ question: "產線溫度異常如何處理？" }) }));
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.match(payload.answer, /僅供人員參考/);
+  assert.ok(payload.sources.some((source: { type: string }) => source.type === "sop"));
+  assert.ok(payload.sources.some((source: { type: string }) => source.type === "alert"));
+  assert.ok(payload.sources.some((source: { type: string }) => source.type === "work_order"));
+  const techToken = createSessionToken("00000000-0000-4000-8000-000000000002", "technician");
+  assert.equal((await audit(new Request("http://localhost/api/admin/audit", { headers: { cookie: `erp_session=${techToken}` } }))).status, 403);
+  const auditResponse = await audit(new Request("http://localhost/api/admin/audit", { headers: { cookie: `erp_session=${adminToken}` } }));
+  const events = await auditResponse.json();
+  assert.ok(events.some((event: { action: string }) => event.action === "alert.created"));
+  assert.ok(events.some((event: { action: string }) => event.action === "ai.advice"));
+});

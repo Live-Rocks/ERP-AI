@@ -2,33 +2,53 @@
 
 ## Objective
 
-<!-- 一句可驗收的產品目標。 -->
+建立一套可在單一廠區內自架的繁體中文 AI ERP 智慧工廠系統，使管理員與技術員能監控五條產線、處理異常維修，並取得具來源引用的本機 AI 排障建議。
 
 ## Intended users and primary outcome
 
-<!-- 誰會使用？完成後能做到什麼？ -->
+工廠管理員與技術員使用本系統。管理員可掌握全廠產線、處理告警並指派維修工作；技術員可接收、更新及結案工單，且兩種角色皆可依廠內資料取得 AI 處置建議。
 
 ## Scope for the first release
 
-- <!-- 必須具備的能力 -->
+- 帳號登入及管理員、技術員兩種角色的存取控制。
+- 固定五條產線的總覽與單線詳情，呈現模擬即時狀態、生產資訊、異常資訊及最後更新時間。
+- 可替換的產線資料提供者：首版提供每五秒更新的模擬器，並保留未來新增 OPC UA provider 的介面邊界。
+- 告警建立與去重；未結案的異常告警建立一張待指派維修工單。
+- 工單指派、處置更新、結案與完整狀態歷程。
+- 使用內建繁體中文 SOP／故障排除文件、告警與相關工單資料的本機 AI 知識助理；每次回答須帶來源引用並明確標示為人員參考建議。
+- 重要使用者、告警、工單與 AI 問答事件的可檢視稽核紀錄。
+- 以 Docker Compose 在單一廠內伺服器執行 Next.js、PostgreSQL 與 Ollama 的部署定義。
 
 ## Explicit non-goals
 
-- <!-- 第一版刻意不做的事 -->
+- 直接讀取或寫入真實 PLC／設備，以及任何自動化設備控制。
+- 雲端 AI、雲端資料同步、外部通知或外部資料服務。
+- 故障預測、自動派工、生產排程、庫存、採購、財務、多廠區管理及使用者文件匯入。
+- 真實 OPC UA 連線；首版只定義未來可實作的介面邊界。
 
 ## Acceptance criteria
 
 Every criterion has a stable `AC-NNN` ID. Do not reuse an ID after deleting a criterion; retain the ID when only its wording changes.
 
-<!-- Format: - [ ] AC-NNN — observable, testable outcome -->
-<!-- Example ID only: AC-NNN; replace NNN with a unique three-digit number. -->
+- [ ] AC-001 — 管理員與技術員可登入；技術員不可執行僅限管理員的使用者管理、產線設定與工單指派操作。
+- [ ] AC-002 — 儀表板可同時呈現五條固定產線的名稱、狀態、最後更新時間及模擬生產／異常資訊，且資料每五秒更新一次。
+- [ ] AC-003 — 新異常告警會建立一張待指派工單；同一未結案異常再次出現時，不會建立重複的未結案工單。
+- [ ] AC-004 — 管理員可指派工單；技術員可更新處置內容並結案，系統保留每次狀態變更的歷程。
+- [ ] AC-005 — AI 助理可依內建 SOP、告警及相關工單，以繁體中文提供處置建議，並在回答中列出可追溯的資料來源。
+- [ ] AC-006 — AI 助理沒有設備寫入或控制介面，且產品在執行 AI 功能時不依賴雲端 AI 或外部資料服務。
+- [ ] AC-007 — 登入、告警建立、工單變更及 AI 問答的重要事件會產生可由管理員檢視的稽核紀錄。
+- [ ] AC-008 — 系統可由 Docker Compose 在單一廠內伺服器啟動 Next.js、PostgreSQL 與 Ollama，並完成登入、監控、工單與 AI 問答的本機流程。
 
 ## Constraints and defaults
 
 - Reversible, low-risk implementation choices may be made autonomously.
-- <!-- 技術、設計、預算、合規或資料限制 -->
+- 使用 TypeScript、Next.js／React、Next.js server/API 與 PostgreSQL。
+- 使用 Ollama 執行本機語言模型；業務資料、SOP、告警、工單與 AI 請求不得離開廠內網路。
+- AI 僅可讀取使用者依角色獲授權的資料，只能提出建議；所有工單與設備相關行動均由人員確認並執行。
+- 首版為單一廠區、五條固定產線與合成遙測資料；真實 OPC UA 整合需另行取得端點、憑證、點位表與網路核准。
+- 首版預設使用繁體中文；PostgreSQL 的列級安全策略可作為後續資料隔離強化，不是首版可驗收前提。
 
 ## Decisions requiring human approval
 
 - External publication, paid services, production data changes, credential changes, or destructive operations.
-- <!-- 其他不可逆或高成本的決策 -->
+- 連接真實 PLC／OPC UA、取得或變更生產環境憑證、開放任何外網連線、啟用雲端服務，或新增 AI 自動控制能力。

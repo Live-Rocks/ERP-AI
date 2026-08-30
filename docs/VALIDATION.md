@@ -23,9 +23,9 @@ Passing static checks, unit tests, type checks, or builds does not automatically
 
 | Gate | When it applies | Command or artifact | Passing condition |
 | --- | --- | --- | --- |
-| Formatting/lint | when configured | <!-- command --> | exits 0 |
-| Unit tests | changed logic | <!-- command --> | exits 0 |
-| Build/type check | compiled projects | <!-- command --> | exits 0 |
+| Formatting/lint | TypeScript source changes | `npm run lint` | exits 0 |
+| Unit tests | changed logic | `npm test` | exits 0 |
+| Build/type check | compiled projects | `npm run typecheck` and `npm run build` | both exit 0 |
 | Integration/smoke | changed system boundary | <!-- command or scenario --> | expected path completes |
 | Product acceptance | release candidate | `PROJECT.md` criteria + evidence | every criterion is linked to evidence |
 

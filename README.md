@@ -1,37 +1,72 @@
-# Autonomous Codex Harness
+# AI ERP 智慧工廠
 
-這是一個讓 Codex 跨越多個 phase 自主推進的工作區模板。
+一套以繁體中文為預設、可在單一廠區內自架的智慧工廠管理原型。它協助工廠管理員與技術員監控五條產線、處理異常與維修工單，並取得附來源引用的本機排障建議。
 
-它的控制迴圈是：
+## 已驗證功能
 
-```text
-選擇下一個可執行 phase → 規劃 → 實作 → 驗證 → 記錄證據 → 選擇下一個 phase
+- 管理員與技術員登入，以及 server-side 角色存取控制。
+- 固定五條模擬產線的狀態、產量、不良品與每五秒更新的儀表板。
+- 異常告警、同一未結案異常的去重，以及待指派維修工單。
+- 管理員指派、技術員處置與結案，並保留工單狀態歷程。
+- 以內建繁中 SOP、告警與工單資料提供帶來源引用的本機排障建議。
+- 管理員可檢視登入、告警、工單和 AI 問答的稽核紀錄。
+
+詳情與可驗證的產品契約請見 [PROJECT.md](PROJECT.md)；已通過 phase 的實際結果請見 [evidence/](evidence/)。
+
+## 開發快速開始
+
+需求：Node.js 24 與 npm。
+
+```bash
+npm install
+npm run dev
 ```
 
-Phase 的完成不是暫停訊號。只有整個產品完成，或碰到 `AGENTS.md` 定義的阻塞條件時，Codex 才應停下來。
+開啟 `http://localhost:3000` 後可使用下列**僅限開發示範**帳號：
 
-## 開始使用
+| 角色 | 帳號 | 密碼 |
+| --- | --- | --- |
+| 管理員 | `admin` | `admin-demo` |
+| 技術員 | `tech` | `tech-demo` |
 
-1. 把你的產品需求填入 `PROJECT.md`。
-2. 請 Codex 依據該需求填寫 `ROADMAP.md`；每個 phase 都要有依賴、完成條件與驗證方式。
-3. 在 Codex 輸入 `START_GOAL.md` 裡的 `/goal` 範本，替換方括號內容後送出。
-4. 用 `/goal` 查看進度。完成 phase 後，Codex 會自行選擇下一個可執行 phase，而不是等待核准。
-5. 每個 checkpoint 執行 `./check-harness.sh` 與 `./check-run-state.sh`。後者檢查 AC coverage、phase 依賴、evidence 與 completion claim 是否一致。
+正式部署前必須改用廠內使用者帳號，並以 `SESSION_SECRET` 等祕密設定取代示範設定。
 
-不要把這個目錄當成產品程式碼本身；它是產品 repo 旁或 repo 內的工作控制層。
+### 驗證指令
 
-## 文件角色
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+./check-harness.sh
+./check-run-state.sh
+```
 
-- `PROJECT.md`：不可輕易改動的產品契約。
-- `ROADMAP.md`：phase 佇列與依賴圖。
-- `STATE.md`：此刻的真實進度，供中斷後恢復。
-- `plans/`：每個 phase 的行動計畫。
-- `evidence/`：每個 phase 的驗收證據。
-- `AGENTS.md`：Codex 的自動推進與安全規則。
-- `docs/ARCHITECTURE.md`：已實作的系統邊界、資料流與關鍵契約；不是願望清單。
-- `docs/DECISIONS.md`：會改變架構、資料治理、產品邊界或可驗證主張的 ADR。
-- `docs/VALIDATION.md`：跨 phase 共用的測試與驗證 gate。
+## 廠內部署狀態
 
-`PROJECT.md` 管產品意圖與 AC；`ROADMAP.md` 管計畫與 coverage；`STATE.md` 管目前執行位置；`evidence/` 才是 phase 是否真的通過的最高證據來源。
+專案已提供 Next.js、PostgreSQL 與 Ollama 的 [Docker Compose 定義](compose.yaml)、[Dockerfile](Dockerfile) 與[操作手冊](docs/OPERATIONS.md)。
 
-`docs/OPERATIONS.md` 僅在專案有部署、排程、外部服務或機密時才建立。模型／資料／研究型專案則在需要時新增 `docs/DATA_CONTRACT.md` 與 `docs/EXPERIMENTS.md`；不要為了完整感而預先建立它們。
+目前為「功能原型／部署待驗證」：此工作區沒有 Docker CLI，因此尚未執行 Compose config、容器啟動與三服務端到端 smoke test；`AC-008` 尚未通過。部署時請先複製 `.env.example` 為 `.env`，設定廠內祕密，並在具 Docker Compose 的環境執行：
+
+```bash
+docker compose up --build -d
+```
+
+不要將此命令直接用於已有重要資料的生產環境；完整資料與復原注意事項見 [docs/OPERATIONS.md](docs/OPERATIONS.md)。
+
+## 安全與範圍
+
+- 資料與 AI 請求設計為留在廠內；不使用雲端 AI 或外部資料服務。
+- 系統只提供人員參考建議，沒有 PLC／設備寫入或自動控制介面。
+- 真實 OPC UA／PLC 連線、故障預測、自動派工、排程、庫存及財務不在首版範圍。
+- 目前開發版仍使用記憶體示範資料與可重現的本機 retrieval 回覆；PostgreSQL persistence 與 Ollama 實際推論須在 Compose 驗證 phase 完成後才可宣稱正式可用。
+
+## 專案治理與驗證
+
+本專案保留 Harness 作為開發治理層，而非產品本身：
+
+- [AGENTS.md](AGENTS.md)：自主執行與安全規則。
+- [ROADMAP.md](ROADMAP.md)：phase 相依關係與完成狀態。
+- [STATE.md](STATE.md)：目前執行位置與 blocker。
+- [plans/](plans/) 與 [evidence/](evidence/)：每個 phase 的計畫及可驗證結果。
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)：目前已實作的系統邊界與契約。
