@@ -41,5 +41,5 @@ export interface FactoryOverview {
 }
 
 export interface LineDataProvider {
-  refresh(at?: Date): FactoryOverview;
+  refresh(at?: Date): Promise<FactoryOverview>;
 }

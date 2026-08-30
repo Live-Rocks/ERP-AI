@@ -21,3 +21,39 @@ Do not record routine implementation details. Do not rewrite accepted history: a
 ## Consequences
 
 可在未取得 PLC 存取權時交付完整可演示的監控與維修流程，並保留 OPC UA 整合空間。首版不主張真實設備即時性、預測能力或自動控制；未來若要連接真實設備、外網或雲端服務，必須建立新的核准決策與驗證計畫。
+
+# D002 — 在部署驗收延後期間核准人工現場作業 Phase 06
+
+- Date: 2026-08-30
+- Status: accepted
+- Supersedes: none
+
+## Context
+
+Phase 05 的 Docker Compose 系統驗收因工作區沒有 Docker CLI 而無法取得 passing evidence。人員明確要求不等待該外部環境，先啟動已規劃的 Phase 06。成熟 MES 將人員操作回報視為生產與品質資料的基礎，但目前產品仍禁止自動排程、真實 PLC 與設備控制。
+
+## Decision
+
+保留 Phase 05 為 blocked，且 AC-008 仍未通過；它是產品 release 的未解阻礙。Phase 06 改為依賴已有 evidence 的 Phase 04，新增 AC-009，交付固定五線的人工現場作業建立、指派與技術員回報。所有狀態轉換都由 server-side RBAC 與 audit 保護，資料來源仍是使用者輸入與模擬資料。
+
+## Consequences
+
+可在沒有 Docker 的開發環境持續交付可驗證的現場作業垂直切片，而不把未完成的容器驗收偽稱為通過。Phase 06 完成也不解除 AC-008 的 release blocker，且不授權自動排程、機器控制或外網連線。
+
+# D003 — 核准品質不合格與批次／序號追溯 Phase 07
+
+- Date: 2026-08-30
+- Status: accepted
+- Supersedes: none
+
+## Context
+
+Phase 06 已有通過 evidence，使用者明確要求啟動已規劃的品質不合格與批次／序號追溯。產品需要可追溯的人工品質處置資料，但尚未核准庫存、排程、條碼設備、真實 OT 或外部服務。此工作區也仍不能執行 Docker Compose。
+
+## Decision
+
+新增 AC-010：管理員以既有人工現場作業、固定產線與使用者輸入的唯一批次／序號建立檢驗結果；不合格必須記錄缺陷描述。僅被指派該作業的技術員可填寫矯正處置；管理員可在已有矯正處置後結案，並依批次／序號查閱作業、檢驗與處置歷程。建立、處置與結案皆寫入稽核。首版不提供刪除 API；正式資料保留年限應在開始收集生產資料前，由廠內法規／品質責任人另行決定。
+
+## Consequences
+
+Phase 07 可在 Phase 06 的人工作業資料上形成可驗證的品質閉環，且不需 PLC、憑證或真實設備。它不解除 Phase 05／AC-008 的 release blocker，亦不授權任何庫存異動、隔離／報廢帳務、自動排程、設備控制、雲端資料傳輸或 OT 連線。

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { authenticate, currentUser, requireAdmin } from "../src/server/auth-service";
+import { listActivity, resetActivityForTests } from "../src/server/activity-log";
 import { MemoryAuthRepository, setAuthRepositoryForTests } from "../src/server/repositories";
 import { createSessionToken, verifySessionToken } from "../src/server/session";
 import { POST as login } from "../src/app/api/auth/login/route";
@@ -37,9 +38,9 @@ test("錯誤密碼與遭竄改 session 會被拒絕", async () => {
 
 test("登入會寫入稽核事件", async () => {
   const repository = new MemoryAuthRepository();
-  setAuthRepositoryForTests(repository);
+  resetActivityForTests(); setAuthRepositoryForTests(repository);
   await authenticate("admin", "admin-demo");
-  assert.equal((await repository.listAudit())[0]?.action, "auth.login");
+  assert.equal((await listActivity())[0]?.action, "auth.login");
 });
 
 test("登入 API 設定 HttpOnly session，且管理員 API 拒絕技術員", async () => {
@@ -61,9 +62,11 @@ test("登入 API 設定 HttpOnly session，且管理員 API 拒絕技術員", as
   assert.equal((await administratorResponse.json()).length, 2);
 });
 
-test("PostgreSQL migration 定義角色、使用者、session 與稽核資料表", () => {
+test("PostgreSQL migration 定義角色、使用者、session、稽核與營運資料表", () => {
   const sql = readFileSync("db/migrations/0001_auth.sql", "utf8");
   for (const statement of ["CREATE TYPE user_role", "CREATE TABLE users", "CREATE TABLE sessions", "CREATE TABLE audit_events"]) {
     assert.match(sql, new RegExp(statement));
   }
+  const operationalSql = readFileSync("db/migrations/0002_operational_data.sql", "utf8");
+  for (const statement of ["CREATE TABLE line_snapshots", "CREATE TABLE alerts", "CREATE TABLE work_orders", "CREATE TABLE work_order_history"]) assert.match(operationalSql, new RegExp(statement));
 });

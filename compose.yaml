@@ -6,6 +6,11 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?set a local session secret}
       DATABASE_URL: postgresql://erp:${POSTGRES_PASSWORD:?set a local database password}@postgres:5432/erp
       OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:?set a preloaded local Ollama model name}
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?set an initial local admin password}
+      INITIAL_TECHNICIAN_USERNAME: ${INITIAL_TECHNICIAN_USERNAME:-tech}
+      INITIAL_TECHNICIAN_PASSWORD: ${INITIAL_TECHNICIAN_PASSWORD:?set an initial local technician password}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

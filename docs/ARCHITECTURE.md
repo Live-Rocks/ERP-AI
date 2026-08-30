@@ -4,42 +4,46 @@ This document describes the system that exists now. Keep proposed work in `ROADM
 
 ## System boundary
 
-本專案目前提供廠內自架的 Next.js 應用基礎與角色存取控制。瀏覽器、Next.js server/API 與未來的 PostgreSQL 均屬於廠內邊界；真實 PLC、OPC UA、雲端服務及設備控制均不屬於首版系統邊界。
+瀏覽器、Next.js server/API、PostgreSQL 與 Ollama 均位於廠內網路邊界。正式 runtime 在設定 `DATABASE_URL` 時使用 PostgreSQL；未設定時僅使用可注入的 in-memory adapter 供開發與自動測試。真實 PLC、OPC UA、雲端服務與設備控制不屬於首版系統邊界。
 
 ## Components and ownership
 
 | Component | Responsibility | Owns data/state | Interfaces |
 | --- | --- | --- | --- |
-| Next.js App Router | 繁中登入頁、角色導向首頁及本機 API | HttpOnly session cookie 生命週期 | `/api/auth/login`、`/api/auth/logout`、`/api/auth/me`、`/api/admin/users` |
-| Auth service | 驗證帳密、簽發與驗證 HMAC session、限制管理員操作 | 使用者身分與角色 | repository 介面、signed cookie |
-| Auth repository | 提供開發示範帳號與 audit event 儲存抽象 | 使用者與登入／登出事件 | `AuthRepository` |
-| PostgreSQL migration | 定義日後廠內持久化的 auth schema | `users`、`sessions`、`audit_events` | `db/migrations/0001_auth.sql` |
-| SimulatedLineDataProvider | 每五秒產生固定五線的可重現遙測快照 | 產線狀態與產量快照 | `LineDataProvider`、`/api/factory/overview` |
-| Factory store | 對新異常建立告警與待指派工單，並以 line/code 去重 | 開放告警與待指派工單 | `FactoryStore` |
-| Work-order route | 執行管理員指派及技術員處置／結案 | 工單狀態與不可變歷程 | `/api/work-orders/[id]` |
+| Next.js App Router | 繁中登入、儀表板與本機 API | HttpOnly session cookie 生命週期 | auth、overview、work-order、production-task、quality-record、traceability、AI、audit 與 health API |
+| Auth service/repository | 驗證帳密、簽發 HMAC session、server-side RBAC | 使用者與登入／登出稽核 | `AuthRepository`；PostgreSQL runtime 首次啟動以本機環境變數建立初始帳號 |
+| PostgreSQL adapter | 持久化 users、audit、五線快照、alerts、work orders、人工作業與品質追溯資料 | `0001_auth.sql` 至 `0004_quality_traceability.sql` 的資料表 | `DATABASE_URL`；`/api/health` 會檢查資料庫連線 |
+| SimulatedLineDataProvider | 每五秒產生五線可重現遙測 | current line snapshots | `LineDataProvider`、`/api/factory/overview` |
+| Factory data store | 告警去重、工單指派／結案與狀態歷程 | alerts、work orders、history | in-memory test adapter 或 PostgreSQL adapter |
+| Production task store | 管理員建立／指派人工現場作業，以及獲指派技術員的狀態與產出回報 | production tasks、immutable task history | in-memory test adapter 或 PostgreSQL adapter；`/api/production-tasks` |
+| Quality record store | 檢驗結果、不合格、技術員矯正處置與批次／序號追溯 | quality records、immutable quality history | in-memory test adapter 或 PostgreSQL adapter；`/api/quality-records`、`/api/traceability` |
+| Local AI client | 將 server 檢索到的 SOP、alert、工單內容交由 Ollama 生成繁中建議 | AI 回答引用由 server 固定產生 | `OLLAMA_URL`、`OLLAMA_MODEL`、`/api/ai/advice` |
+| Activity log | 重要操作的可檢視稽核 | `audit_events` | `/api/admin/audit`（僅管理員） |
 
 ## Critical flows
 
-1. 使用者提交帳密至本機登入 API。
-2. Auth service 驗證密碼、記錄登入事件，並以 HttpOnly、SameSite=Lax cookie 回傳短期 session token。
-3. 受保護 API 驗證 token 與角色；管理員 API 對技術員回傳 403。
-4. 登出 API 清除 cookie 並記錄登出事件。
-5. 已登入使用者讀取 factory overview；模擬 provider 產生五線快照，首次異常建立告警及待指派工單，同一開放異常不重複建單。
-6. 管理員將待指派工單指派給技術員；只有該技術員可提交處置並結案，每次轉換寫入歷程。
+1. 使用者提交帳密至本機登入 API；auth service 驗證後寫入 audit，並以 HttpOnly、SameSite=Lax cookie 回傳八小時 HMAC session。
+2. 已登入使用者讀取 overview；simulator 建立五線快照。正式 runtime 將快照寫入 PostgreSQL；首次異常以資料庫 partial unique index 去重，並在同一交易中建立待指派工單與初始歷程。
+3. 管理員指派工單；被指派技術員記錄處置與結案。每次可接受的狀態轉換都寫入 history 與 audit。
+4. 管理員建立並指派固定五線的人工現場作業；只有獲指派技術員可依 `planned → in_progress → paused/in_progress → completed` 回報本次良／不良品與停機原因。每次回報與 audit 會同一交易寫入。
+5. 管理員把檢驗結果連結到既有人工現場作業與該作業的固定產線；不合格必須有缺陷描述。只有獲指派該作業的技術員可讓紀錄從 `open → corrected`，管理員才可 `corrected → closed`；管理員可按批次／序號取得關聯作業、品質紀錄與不可變歷程。
+6. 已登入使用者提問時，server 組合內建 SOP、開放 alert 與相關 work order，交給廠內 Ollama 生成建議；server 再附加可追溯來源與「僅供人員參考」聲明。
+7. 管理員可讀取所有重要事件的 audit；技術員對管理員 API 會取得 403。
 
 ## Data, trust, and failure boundaries
 
-- 密碼只以 scrypt hash 保存於使用者資料；API 絕不回傳 password hash。
-- session payload 使用 HMAC 防竄改，預設有效期八小時；部署前必須以 `SESSION_SECRET` 設定廠內祕密。
-- 目前預設 repository 僅提供示範用的 in-memory 資料；PostgreSQL migration 已交付，但尚未連接任何生產資料庫。
-- 模擬 provider 是唯一的 OT 資料來源，沒有 OPC UA client、設備命令或任何寫入設備的介面。
-- 告警去重鍵為同一 `lineId` 與 `code` 的未結案告警；後續工單 phase 必須保留此 idempotency 邊界。
-- 工單只能由 `pending_assignment` 轉為 `in_progress`，再由被指派技術員轉為 `resolved`；無效轉換回傳 conflict。
-- 本 phase 沒有外部網路呼叫、設備寫入或 PLC 通訊；後續功能必須延續唯讀設備控制邊界。
+- 密碼僅以 scrypt hash 儲存，API 絕不回傳 password hash；正式環境的初始帳密只由未追蹤的 `.env` 提供。
+- `DATABASE_URL` 啟用 PostgreSQL adapter；沒有資料庫設定的模式不可視為部署完成。
+- `OLLAMA_URL` 僅接受內部 Docker service、localhost、`.local` 或 RFC1918／loopback HTTP endpoint；公網 URL 會在發送前拒絕。未設定模型或無法連線時，AI API 回傳 503，而非退回雲端或固定答案。
+- 來源引用由 application server 決定，不信任模型自行宣稱來源。
+- 模擬 provider 是唯一 OT 資料來源；程式沒有 OPC UA client、設備命令或任何 PLC 寫入介面。
+- 告警去重鍵為同一 `lineId` 與 `code` 的未結案 alert；工單只能由 `pending_assignment` → `in_progress` → `resolved`。
+- 人工現場作業的回報數量必須是非負整數；只有被指派技術員可回報，暫停必須提供停機原因，已完成作業不可再變更。
+- 品質紀錄以 `(production_task_id, batch_or_serial)` 防止同一作業重複檢驗；通過檢驗會直接結案，不合格必須從 `open → corrected → closed`，且只有獲指派該作業的技術員可提供非空白矯正處置。沒有品質刪除 API；資料保留年限待廠內品質責任人決定。
 
 ## Operational contracts
 
-- `db/migrations/0001_auth.sql` 必須先於任何依賴使用者、session 或 audit event 的持久化功能執行。
-- 管理員 API 必須在未登入或非管理員請求時拒絕；不能以 UI 隱藏取代 server-side 授權。
-- API session cookie 名稱 `erp_session` 是目前登入與登出路由共同契約。
-- `/api/factory/overview` 必須要求登入，並同時供管理員與技術員讀取；dashboard 每 5 秒重新讀取此唯讀介面。
+- `0001_auth.sql` 必須先於 `0002_operational_data.sql`、`0003_production_execution.sql` 與 `0004_quality_traceability.sql` 執行；Compose 只在 PostgreSQL volume 初次建立時執行 migrations。
+- Compose 只將 app 綁定 loopback；PostgreSQL 與 Ollama 無 host port。模型、image 與依賴必須先由核准的廠內來源備妥，runtime 不執行 model pull。
+- `SESSION_SECRET`、`POSTGRES_PASSWORD`、初始帳密與 `OLLAMA_MODEL` 是部署前必填設定；不得提交至版本庫。
+- `erp_session` 是登入與登出 API 的共同 cookie 契約；所有管理員權限皆在 server 側驗證，不能以 UI 隱藏取代。

@@ -26,7 +26,7 @@ Passing static checks, unit tests, type checks, or builds does not automatically
 | Formatting/lint | TypeScript source changes | `npm run lint` | exits 0 |
 | Unit tests | changed logic | `npm test` | exits 0 |
 | Build/type check | compiled projects | `npm run typecheck` and `npm run build` | both exit 0 |
-| Integration/smoke | changed system boundary | <!-- command or scenario --> | expected path completes |
+| Integration/smoke | changed system boundary | the phase plan's reproducible command or role-specific scenario, recorded in evidence | expected path completes and the actual result is recorded in `evidence/phase-XX.md` |
 | Product acceptance | release candidate | `PROJECT.md` criteria + evidence | every criterion is linked to evidence |
 
 ## Evaluation protocol

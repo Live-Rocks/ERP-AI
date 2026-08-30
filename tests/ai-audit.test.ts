@@ -4,12 +4,14 @@ import { POST as advice } from "../src/app/api/ai/advice/route";
 import { GET as audit } from "../src/app/api/admin/audit/route";
 import { resetActivityForTests } from "../src/server/activity-log";
 import { getFactoryProvider, resetFactoryStoreForTests } from "../src/server/factory-store";
+import { setOllamaClientForTests } from "../src/server/knowledge";
 import { MemoryAuthRepository, setAuthRepositoryForTests } from "../src/server/repositories";
 import { createSessionToken } from "../src/server/session";
 
 test("本機 AI 建議引用 SOP、告警與工單，且寫入 audit", async () => {
   resetActivityForTests(); resetFactoryStoreForTests(); setAuthRepositoryForTests(new MemoryAuthRepository());
-  getFactoryProvider().refresh(new Date(0));
+  setOllamaClientForTests({ generate: async () => "請先檢查冷卻風扇與溫度感測器，再由技術員記錄結果。" });
+  await getFactoryProvider().refresh(new Date(0));
   const adminToken = createSessionToken("00000000-0000-4000-8000-000000000001", "admin");
   const response = await advice(new Request("http://localhost/api/ai/advice", { method: "POST", headers: { cookie: `erp_session=${adminToken}`, "content-type": "application/json" }, body: JSON.stringify({ question: "產線溫度異常如何處理？" }) }));
   assert.equal(response.status, 200);
@@ -24,4 +26,5 @@ test("本機 AI 建議引用 SOP、告警與工單，且寫入 audit", async () 
   const events = await auditResponse.json();
   assert.ok(events.some((event: { action: string }) => event.action === "alert.created"));
   assert.ok(events.some((event: { action: string }) => event.action === "ai.advice"));
+  setOllamaClientForTests(undefined);
 });
