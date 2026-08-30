@@ -2,10 +2,10 @@
 
 ## Run status
 
-- State: `blocked` <!-- ready | planning | implementing | verifying | blocked | complete -->
-- Current phase: `05`
+- State: `implementing` <!-- ready | planning | implementing | verifying | blocked | complete -->
+- Current phase: `09`
 - Last verified phase: `07`
-- Next action: 在具 Docker Compose 的廠內或 CI 環境執行 `docker compose config`、`docker compose up --build -d` 與 Phase 05 的 PostgreSQL／Ollama end-to-end smoke flow。Phase 08 仍需人員核准產品契約、OT safety ADR、端點、read-only 憑證與點位表。
+- Next action: 依 `plans/phase-09.md` 導入前端 design system、Sidebar、Topbar 與 app shell；完成後執行 Phase 09 的既有 API regression、browser 情境與 baseline 驗證。Phase 05 的 Docker Compose smoke flow 仍須在具 Docker CLI 的環境執行。
 
 ## Product-level acceptance
 
@@ -42,3 +42,5 @@
 2026-08-30 — 人員明確核准啟動 Phase 07。PROJECT 新增 AC-010，D003 記錄品質不合格與批次／序號追溯的資料治理與安全邊界；Phase 07 依賴已通過的 Phase 06 evidence 並進入 implementing。Phase 05／AC-008 的 Docker Compose release blocker 保持不變。
 
 2026-08-30 — Phase 07 已通過並有 `evidence/phase-07.md`。AC-010 的檢驗結果、不合格缺陷、獲指派技術員矯正、管理員結案、批次／序號追溯、不可變歷程與 audit 均通過 21/21 自動測試與 production-server dashboard 情境。重新選擇後，Phase 05 仍是 earliest uncompleted phase，且因缺 Docker CLI 而 blocked；Phase 08 沒有產品契約 AC 與 OT 核准。
+
+2026-08-31 — 人員核准 D004 的前端 Industrial SaaS／MES 重構。PROJECT 新增 AC-011 至 AC-016；Phase 09–14 可依賴 Phase 07 evidence 執行，而 Phase 05／AC-008 的 Docker Compose release blocker 保持不變。Phase 09 已進入 implementing；Phase 08 仍需獨立 OT 核准。

@@ -57,3 +57,21 @@ Phase 06 已有通過 evidence，使用者明確要求啟動已規劃的品質�
 ## Consequences
 
 Phase 07 可在 Phase 06 的人工作業資料上形成可驗證的品質閉環，且不需 PLC、憑證或真實設備。它不解除 Phase 05／AC-008 的 release blocker，亦不授權任何庫存異動、隔離／報廢帳務、自動排程、設備控制、雲端資料傳輸或 OT 連線。
+
+# D004 — 在部署驗收延後期間核准前端工業 SaaS 重構
+
+- Date: 2026-08-31
+- Status: accepted
+- Supersedes: none
+
+## Context
+
+Phase 07 有通過 evidence，但 Phase 05 的 Docker Compose 驗收仍因缺少 Docker CLI 而 blocked。人員明確要求保留既有 Next.js／React／TypeScript 與 backend contract，將單頁 dashboard 重構為深色 Industrial SaaS／MES 多頁 UI，並使用 Tailwind CSS、shadcn/ui、Lucide React 與 Recharts。
+
+## Decision
+
+新增 AC-011 至 AC-016，將前端工作依 Phase 09–14 執行，依賴 Phase 07 evidence 而不等待 Phase 05。UI 只能使用既有 API；沒有 API 的 Production Orders、Telemetry、Maintenance 與可寫 Settings 必須顯示明確不可用狀態。OEE 與停機時長缺乏真實來源，因此不得合成數字；production trend 僅使用目前瀏覽器工作階段累積的既有 overview polling 樣本。所有既有 server-side RBAC、資料和 OT 安全邊界維持不變。
+
+## Consequences
+
+可在沒有 Docker 的開發環境交付與驗證現場使用者可見的 UI 改善，而不將 Compose 驗收誤稱為通過。UI 完成不解除 AC-008 release blocker，也不授權 backend、schema、PLC、OPC UA、外部網路或設備控制變更。

@@ -29,6 +29,13 @@
 - 獲指派該作業的技術員可記錄矯正處置；管理員可在已有矯正處置後結案。管理員可依批次／序號查閱相關作業、檢驗與不合格處置歷程。
 - 此擴張不包含庫存異動、隔離／報廢帳務、排程、條碼設備、PLC／OPC UA、設備控制或外部服務。
 
+## Approved extension — UI modernization phases 09–14
+
+- 保留 Next.js／React／TypeScript 與所有既有 server/API、資料庫、authentication、RBAC 和 domain 行為；僅重構前端呈現、前端路由與 client-side 資料組合。
+- 導入 Tailwind CSS、shadcn/ui、Lucide React 與 Recharts，建立深色、繁中、工業 SaaS／MES design system；禁止把產品做成 marketing landing page，避免大量 gradient、glassmorphism 或裝飾性動畫。
+- 將 dashboard 分為帶 Sidebar、Topbar 的 Overview、Production、Equipment、Work Orders、Quality、AI Copilot、Audit Log 與 Settings 頁；沒有現有資料 API 的功能必須以清楚空狀態呈現，不得捏造營運資料。
+- 這項擴張不新增 PLC／OPC UA、外部資料服務、設備控制、資料庫欄位、後端 API 或身分／權限規則。
+
 ## Explicit non-goals
 
 - 直接讀取或寫入真實 PLC／設備，以及任何自動化設備控制。
@@ -50,6 +57,12 @@ Every criterion has a stable `AC-NNN` ID. Do not reuse an ID after deleting a cr
 - [ ] AC-008 — 系統可由 Docker Compose 在單一廠內伺服器啟動 Next.js、PostgreSQL 與 Ollama，並完成登入、監控、工單與 AI 問答的本機流程。
 - [ ] AC-009 — 管理員可為固定五條產線建立並指派人工現場作業；被指派技術員可記錄開始、暫停、完成、良品／不良品數與選填停機原因。未獲指派的技術員不得變更作業，且建立、指派與每次回報均可由管理員稽核。
 - [ ] AC-010 — 管理員可將檢驗結果與不合格紀錄連結到既有人工現場作業、固定產線及唯一批次／序號；不合格項目必須有缺陷描述。只有獲指派該作業的技術員可填寫矯正處置，管理員可在已有矯正處置後結案，並可依批次／序號查閱相關作業、檢驗與處置歷程；建立、處置與結案均可由管理員稽核。
+- [ ] AC-011 — 已登入的管理員與技術員可使用深色工業 SaaS app shell，透過 Sidebar 與 Topbar 在 Overview、Production、Equipment、Work Orders、Quality、AI Copilot、Audit Log 與 Settings 間導航；所有實際操作仍受既有 server-side RBAC 保護。
+- [ ] AC-012 — Overview Dashboard 使用現有 API 顯示 Output、Yield、Active Alerts、五條 Production Lines、active alerts、work orders 及本次瀏覽器工作階段的 production trend；缺少真實來源的 OEE 與停機時長必須明確顯示為不可用，不得以假資料呈現。
+- [ ] AC-013 — Work Orders、Production Tasks 與 Reporting 頁能使用既有 API 完成原有角色授權的指派、處置、建立與回報流程；Production Orders、Telemetry 與 Maintenance 在無資料 API 時必須顯示明確不可用狀態。
+- [ ] AC-014 — Quality 與 Traceability 頁能使用既有品質 API 建立檢驗、不合格矯正、結案及批次／序號追溯，並保留既有角色限制。
+- [ ] AC-015 — AI Copilot、Audit Log 與 Settings 頁能呈現既有 AI 建議／來源、管理員稽核資料及目前帳號／部署邊界；Settings 不提供不存在的可寫設定。
+- [ ] AC-016 — UI 在 1920px、1440px 與 tablet 寬度下維持可用版面，支援鍵盤操作、可見 focus、語意標記與不依賴顏色的狀態提示。
 
 ## Constraints and defaults
 
