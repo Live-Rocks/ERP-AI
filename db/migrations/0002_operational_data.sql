@@ -2,8 +2,8 @@ CREATE TABLE line_snapshots (
   line_id TEXT PRIMARY KEY,
   line_name TEXT NOT NULL,
   state TEXT NOT NULL CHECK (state IN ('running', 'idle', 'stopped', 'fault')),
-  produced_units INTEGER NOT NULL,
-  rejected_units INTEGER NOT NULL,
+  produced_units BIGINT NOT NULL,
+  rejected_units BIGINT NOT NULL,
   last_updated_at TIMESTAMPTZ NOT NULL
 );
 

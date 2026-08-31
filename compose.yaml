@@ -3,6 +3,7 @@ services:
     build: .
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       SESSION_SECRET: ${SESSION_SECRET:?set a local session secret}
       DATABASE_URL: postgresql://erp:${POSTGRES_PASSWORD:?set a local database password}@postgres:5432/erp
       OLLAMA_URL: http://ollama:11434
@@ -18,7 +19,7 @@ services:
         condition: service_healthy
       ollama:
         condition: service_started
-    networks: [factory]
+    networks: [factory, ingress]
   postgres:
     image: postgres:17-alpine
     environment:
@@ -43,6 +44,7 @@ services:
 networks:
   factory:
     internal: true
+  ingress:
 volumes:
   postgres-data:
   ollama-data:

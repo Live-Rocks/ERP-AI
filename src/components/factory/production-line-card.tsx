@@ -1,0 +1,7 @@
+import { Activity, PackageCheck } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge, type StatusTone } from "@/components/factory/status-badge";
+
+export function ProductionLineCard({ name, status, tone, producedUnits, rejectedUnits, updatedAt }: { name: string; status: string; tone: StatusTone; producedUnits: number; rejectedUnits: number; updatedAt: string }) {
+  return <Card className="border border-border/80 bg-card shadow-none"><CardHeader className="flex-row items-center justify-between gap-3"><CardTitle>{name}</CardTitle><StatusBadge tone={tone}>{status}</StatusBadge></CardHeader><CardContent className="grid grid-cols-2 gap-3 text-sm"><div className="rounded-lg bg-muted/65 p-3"><PackageCheck aria-hidden="true" className="mb-2 size-4 text-primary" /><p className="text-xs text-muted-foreground">累計產出</p><p className="mt-1 font-semibold tabular-nums">{producedUnits.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">件</span></p></div><div className="rounded-lg bg-muted/65 p-3"><Activity aria-hidden="true" className="mb-2 size-4 text-amber-200" /><p className="text-xs text-muted-foreground">不良品</p><p className="mt-1 font-semibold tabular-nums">{rejectedUnits.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">件</span></p></div><p className="col-span-2 text-xs text-muted-foreground">資料時間：{updatedAt}</p></CardContent></Card>;
+}

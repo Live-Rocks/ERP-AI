@@ -69,4 +69,6 @@ test("PostgreSQL migration 定義角色、使用者、session、稽核與營運�
   }
   const operationalSql = readFileSync("db/migrations/0002_operational_data.sql", "utf8");
   for (const statement of ["CREATE TABLE line_snapshots", "CREATE TABLE alerts", "CREATE TABLE work_orders", "CREATE TABLE work_order_history"]) assert.match(operationalSql, new RegExp(statement));
+  assert.match(operationalSql, /produced_units BIGINT NOT NULL/);
+  assert.match(readFileSync("db/migrations/0005_line_snapshot_bigint.sql", "utf8"), /ALTER COLUMN produced_units TYPE BIGINT/);
 });

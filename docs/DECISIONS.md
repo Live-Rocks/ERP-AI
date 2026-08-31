@@ -75,3 +75,21 @@ Phase 07 有通過 evidence，但 Phase 05 的 Docker Compose 驗收仍因缺少
 ## Consequences
 
 可在沒有 Docker 的開發環境交付與驗證現場使用者可見的 UI 改善，而不將 Compose 驗收誤稱為通過。UI 完成不解除 AC-008 release blocker，也不授權 backend、schema、PLC、OPC UA、外部網路或設備控制變更。
+
+# D005 — Compose 採用 loopback ingress 與隔離服務網路
+
+- Date: 2026-08-31
+- Status: accepted
+- Supersedes: none
+
+## Context
+
+第一次隔離 Compose 實境驗收發現：當 app、PostgreSQL 與 Ollama 全部只連到 Docker `internal` network 時，app 的宣告 host port 無法在 Colima 建立可用的 localhost 路由。若讓所有服務改用一般 bridge network，會不必要地放寬資料庫與模型服務的網路邊界。
+
+## Decision
+
+保留 internal `factory` network 供 app、PostgreSQL 與 Ollama 的服務間通訊；新增只連接 app 的 ingress bridge network。Docker host port 只綁定 `127.0.0.1:3000`，PostgreSQL 與 Ollama 不暴露 host port 或連接 ingress network。app 設定 `HOSTNAME=0.0.0.0`，只為讓 Next.js 在 container 內接收 ingress interface 的流量；應用程式的 AI endpoint 驗證仍只允許內部位置。
+
+## Consequences
+
+瀏覽器可在廠內 loopback host port 使用 app，同時 PostgreSQL 與 Ollama 維持 Docker 內部服務。這不授權雲端資料服務、外網模型下載、PLC／OPC UA 存取或設備控制；模型仍須在 runtime 前由核准來源預載。

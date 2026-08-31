@@ -8,7 +8,7 @@
   - AC-006
   - AC-007
   - AC-008
-- In scope: production Dockerfile、Compose services/healthchecks、PostgreSQL migration mount、環境範本、部署說明及可重現 smoke command；production runtime 對 PostgreSQL 的實際持久化介面，以及僅向 Compose 內 Ollama 發送的本機 AI client。
+- In scope: production Dockerfile、Compose services/healthchecks、PostgreSQL migration mount、環境範本、部署說明及可重現 smoke command；production runtime 對 PostgreSQL 的實際持久化介面，以及僅向 Compose 內 Ollama 發送的本機 AI client。實境驗收若發現 Compose 網路無法把 loopback port 路由至 app，修正為 app 專用 ingress network 加上保留給 app／PostgreSQL／Ollama 的 internal factory network，並以 `HOSTNAME=0.0.0.0` 讓 Next.js 接受 ingress interface 的流量；PostgreSQL 與 Ollama 一律不加入 ingress network，也不建立 host port。若模擬累計計數超過 PostgreSQL `INTEGER`，以新的可升級 migration 將 line snapshot counters 升級為 `BIGINT`，並加入 schema regression test；不得重建或刪除既有 PostgreSQL volume。
 - Out of scope: 真實 PLC、雲端、外網模型、設備控制。
 - Done when: Compose 啟動三服務，app health endpoint 與登入、五線監控、工單、AI advice 的本機流程完成。
 
@@ -19,11 +19,12 @@
 
 ## Implementation steps
 
-1. 新增 standalone Next.js Dockerfile 與 Compose services，將 PostgreSQL 與 Ollama 僅暴露於內部 network。
+1. 新增 standalone Next.js Dockerfile 與 Compose services，將 PostgreSQL 與 Ollama 僅暴露於 internal factory network；app 另以 loopback-only ingress network 接受瀏覽器流量，讓 host port 不會使資料庫或模型服務暴露。
 2. 將 production runtime 的使用者、稽核、告警、工單與歷程接至 PostgreSQL，並讓告警建單與工單狀態轉換和稽核事件同交易提交；保留明確的 in-memory test adapter。
 3. 讓 AI 建議先檢索授權的本機資料、再只呼叫設定的廠內 Ollama endpoint，並使來源引用由 server 端固定附加。
 4. 新增 app health endpoint、環境範本及 migration bootstrap 文件。
 5. 執行 static build、Compose config validation；若 Docker CLI 可用，執行 full smoke flow。
+6. 對既有 volume 套用單一新增 migration，重建 app image，並重跑 health、登入、五線與完整操作驗收。
 
 ## Test and verification plan
 

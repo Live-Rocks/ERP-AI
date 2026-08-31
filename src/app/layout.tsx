@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./styles.css";
 import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-erp" });
 
 export const metadata: Metadata = {
   title: "智造工廠 ERP",
@@ -11,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="zh-Hant" className={cn("font-sans", geist.variable)}><body>{children}</body></html>;
+  return (
+    <html lang="zh-Hant" className={`dark ${geist.variable}`}>
+      <body><TooltipProvider>{children}</TooltipProvider></body>
+    </html>
+  );
 }
